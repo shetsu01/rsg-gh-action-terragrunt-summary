@@ -157,7 +157,7 @@ runs:
           }
 
           if ("${{ inputs.checkov_scan }}" !== "") {
-            body = body.concat("#### Checkov Scan Results 🐛`${{ inputs.checkov_scan }}`\n\n");
+            body = body.concat("#### Checkov Scan Results 🔍\n\n `${{ inputs.checkov_scan }}`\n\n");
           }
 
           if ("${{ inputs.apply_outcome }}" !== "") {
