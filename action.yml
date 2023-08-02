@@ -1,0 +1,259 @@
+name: Terragrunt Summary
+description: Creates a Terragrunt summary for RSG GitHub Workflows.
+inputs:
+  github_token:
+    description: GitHub token to use for authentication.
+    required: true
+  debug:
+    description: If debug mode.
+    required: false
+    default: "false"
+  comment_key:
+    description: Comment key to allow locating a specific comment.
+    required: false
+    default: "_"
+  title:
+    description: Summary title.
+    required: true
+  init_outcome:
+    description: The outcome of init, this must be provided.
+    required: true
+  format_outcome:
+    description: The outcome of format, if not provided this will be ommited from the summary.
+    required: false
+    default: ""
+  validate_outcome:
+    description: The outcome of validate, if not provided this will be ommited from the summary.
+    required: false
+    default: ""
+  tflint_outcome:
+    description: The outcome of tflin, if not provided this will be ommited from the summaryt.
+    required: false
+    default: ""
+  tfsec_outcome:
+    description: The outcome of tfsec, if not provided this will be ommited from the summary.
+    required: false
+    default: ""
+  plan_outcome:
+    description: The outcome of plan, if not provided this will be ommited from the summary.
+    required: false
+    default: ""
+  plan_output_path:
+    description: The path to the plan output.
+    required: false
+    default: ""
+  apply_outcome:
+    description: The outcome of apply, if not provided this will be ommited from the summary.
+    required: false
+    default: ""
+  apply_output_path:
+    description: The path to the apply output.
+    required: false
+    default: ""
+  destroy_outcome:
+    description: The outcome of destroy, if not provided this will be ommited from the summary.
+    required: false
+    default: ""
+  destroy_output_path:
+    description: The path to the destroy output.
+    required: false
+    default: ""
+  write_workflow_summary:
+    description: If the workflow summary should be written.
+    required: false
+    default: "true"
+  pr_number:
+    description: ID of a pull request to add this summary as a comment to; this will be ignored if comment_id is provided.
+    required: false
+    default: ""
+  comment_id:
+    description: ID of a comment to replace the body with this summary; this takes precidence over pr_number.
+    required: false
+    default: ""
+  checkov_scan:
+    description: Result of the checkov scan that runs on the terragrunt plan.
+    required: false
+    default: ""
+  working_directory:
+    description: terragrunt working directory.
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Add summary
+      uses: actions/github-script@98814c53be79b1d30f795b907e553d8679345975 # v6.4.0
+      with:
+        github-token: ${{ inputs.github_token }}
+        debug: ${{ inputs.debug }}
+        script: |
+          const fs = require("fs");
+
+          let body = `<!-- ${{ inputs.comment_key }} -->
+          ### ${{ inputs.title }}
+
+          #### Terragrunt Initialization ⚙️\`${{ inputs.init_outcome }}\`
+
+          `;
+
+          if ("${{ inputs.format_outcome }}" !== "") {
+            body = body.concat("#### Terragrunt Format & Style 🖌`${{ inputs.format_outcome }}`\n\n");
+          }
+
+          if ("${{ inputs.validate_outcome }}" !== "") {
+            body = body.concat("#### Terragrunt Validation 🤖`${{ inputs.validate_outcome }}`\n\n");
+          }
+
+          if ("${{ inputs.tflint_outcome }}" !== "") {
+            body = body.concat("#### Run tflint 🐜`${{ inputs.tflint_outcome }}`\n\n");
+          }
+
+          if ("${{ inputs.tfsec_outcome }}" !== "") {
+            body = body.concat("#### Run tfsec 🐛`${{ inputs.tfsec_outcome }}`\n\n");
+          }
+
+          if ("${{ inputs.plan_outcome }}" !== "") {
+            let planDetails = "";
+
+            if ("${{ inputs.plan_outcome }}" === "success" && "${{ inputs.plan_output_path }}" !== "" && fs.existsSync("${{ inputs.plan_output_path }}")) {
+              let cmdOutput = ""
+              const cmdOptions = {};
+              cmdOptions.listeners = {
+                stdout: (data) => {
+                  cmdOutput += data.toString();
+                }
+              };
+
+              cmdOutput = ""
+              await exec.exec(`/bin/bash -c "grep -E '^Plan\:|^No\schanges\.' ${{ inputs.plan_output_path }} || echo 'No changes. Your infrastructure matches the configuration.'"`, "", cmdOptions);
+              const planSummary = cmdOutput.trim();
+              const hasChanges = planSummary.match(/^Plan\:/g);
+
+              cmdOutput = ""
+              await exec.exec(`/bin/bash -c "wc --chars ${{ inputs.plan_output_path }} | grep -Eo '^[0-9]+'"`, "", cmdOptions);
+              const planOutputChars = parseInt(cmdOutput, 10);
+
+              planDetails = `
+          \`${planSummary}\`
+
+          `;
+
+              if (hasChanges && planOutputChars <= 50000) {
+                planDetails = planDetails.concat(`<details><summary>Show Plan</summary>
+
+          \`\`\`diff
+          ${fs.readFileSync("${{ inputs.plan_output_path }}", { encoding: "utf8", flag: "r" }).replace(/^(\u0020+)([\~\-\+\/]+)/gm, "$2$1").trim()}
+          \`\`\`
+
+          </details>
+
+          `);
+              }
+            }
+
+            body = body.concat(`#### Terragrunt Plan 📖\`${{ inputs.plan_outcome }}\`
+          ${planDetails}
+          `);
+          }
+
+          if ("${{ inputs.checkov_scan }}" !== "") {
+            body = body.concat("#### Checkov Scan Results 🐛`${{ inputs.checkov_scan }}`\n\n");
+          }
+
+          if ("${{ inputs.apply_outcome }}" !== "") {
+
+            let applyDetails = "";
+
+            if ("${{ inputs.apply_outcome }}" === "success" && "${{ inputs.apply_output_path }}" !== "" && fs.existsSync("${{ inputs.apply_output_path }}")) {
+              let cmdOutput = ""
+              const cmdOptions = {};
+              cmdOptions.listeners = {
+                stdout: (data) => {
+                  cmdOutput += data.toString();
+                }
+              };
+
+              cmdOutput = ""
+              const applySummary = cmdOutput.trim();
+            
+
+              cmdOutput = ""
+              await exec.exec(`/bin/bash -c "wc --chars ${{ inputs.apply_output_path }} | grep -Eo '^[0-9]+'"`, "", cmdOptions);
+              const applyOutputChars = parseInt(cmdOutput, 10);
+
+              if (applyOutputChars <= 50000) {
+                applyDetails = applyDetails.concat(`<details><summary>Show Apply</summary>
+
+          \`\`\`diff
+          ${fs.readFileSync("${{ inputs.apply_output_path }}", { encoding: "utf8", flag: "r" }).replace(/^(\u0020+)([\~\-\+\/]+)/gm, "$2$1").trim()}
+          \`\`\`
+
+          </details>
+
+          `);
+              }
+            }
+            body = body.concat(`#### Terragrunt Apply ✨\`${{ inputs.apply_outcome }}\`
+          ${applyDetails}
+          `);
+          }
+
+          if ("${{ inputs.destroy_outcome }}" !== "") {
+
+          let destroyDetails = "";
+
+            if ("${{ inputs.destroy_outcome }}" === "success" && "${{ inputs.destroy_output_path }}" !== "" && fs.existsSync("${{ inputs.destroy_output_path }}")) {
+              let cmdOutput = ""
+              const cmdOptions = {};
+              cmdOptions.listeners = {
+                stdout: (data) => {
+                  cmdOutput += data.toString();
+                }
+              };
+
+              cmdOutput = ""
+              const destroySummary = cmdOutput.trim();
+            
+
+              cmdOutput = ""
+              await exec.exec(`/bin/bash -c "wc --chars ${{ inputs.destroy_output_path }} | grep -Eo '^[0-9]+'"`, "", cmdOptions);
+              const destroyOutputChars = parseInt(cmdOutput, 10);
+
+              if (destroyOutputChars <= 50000) {
+                destroyDetails = destroyDetails.concat(`<details><summary>Show Destroy</summary>
+
+          \`\`\`diff
+          ${fs.readFileSync("${{ inputs.destroy_output_path }}", { encoding: "utf8", flag: "r" }).replace(/^(\u0020+)([\~\-\+\/]+)/gm, "$2$1").trim()}
+          \`\`\`
+
+          </details>
+
+          `);
+              }
+            }
+            body = body.concat(`#### Terragrunt Destroy 🔥\`${{ inputs.destroy_outcome }}\`
+          ${destroyDetails}
+          `);
+          }
+
+          body = body.concat("*Pusher: @${{ github.actor }}, Action: `${{ github.event_name }}`, Working Directory: `${{ inputs.working_directory }}`, Workflow: [${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*");
+
+          if (${{ inputs.write_workflow_summary }}) {
+            await core.summary.addRaw(body, true).write();
+          }
+
+          if ("${{ inputs.comment_id }}" !== "") {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: "${{ inputs.comment_id }}",
+              body: body
+            });
+          } else if ("${{ inputs.pr_number }}" !== "") {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ inputs.pr_number || -1 }},
+              body: body
+            });
+          }
