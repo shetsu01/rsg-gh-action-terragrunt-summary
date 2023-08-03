@@ -173,18 +173,9 @@ runs:
               };
 
               cmdOutput = ""
-              scanSummary = ""
               await exec.exec(`/bin/bash -c "grep -E '\"terraform\"' ${{ inputs.checkov_scan_result }}|| echo 'No Terraform code found that can be scanned.'"`, "", cmdOptions);
-              const scanTrimmed = cmdOutput.trim();
-              const regex = /"summary": \{[^]*?\}/;
-              const match = cmdOutput.match(regex);
-              if (match) {
-                const scanSummary = JSON.parse(`{${match[0]}}`);
-              }
-              else {
-                const scanSummary = "Check the below output";
-              }
-              const hasChanges = scanTrimmed.match(/^"terraform"\:/g);
+              const scanSummary = cmdOutput.trim();
+              const hasChanges = scanSummary.match(/^"terraform"\:/g);
 
               cmdOutput = ""
               await exec.exec(`/bin/bash -c "wc --chars ${{ inputs.checkov_scan_result }} | grep -Eo '^[0-9]+'"`, "", cmdOptions);
