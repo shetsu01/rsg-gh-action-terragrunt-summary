@@ -180,6 +180,9 @@ runs:
               if (match) {
                 const scanSummary = JSON.parse(`{${match[0]}}`);
               }
+              else {
+                const scanSummary = "Check the below output";
+              }
               const hasChanges = scanTrimmed.match(/^"terraform"\:/g);
 
               cmdOutput = ""
