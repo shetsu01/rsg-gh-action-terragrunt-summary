@@ -74,6 +74,10 @@ inputs:
     description: Result of the checkov scan that runs on the terragrunt plan.
     required: false
     default: ""
+  checkov_scan_result:
+    description: Path to the checkov scan results.
+    required: false
+    default: ""
   working_directory:
     description: terragrunt working directory.
     required: false
@@ -157,8 +161,49 @@ runs:
           }
 
           if ("${{ inputs.checkov_scan }}" !== "") {
-            body = body.concat("#### Checkov Scan Results 🔍\n\n `${{ inputs.checkov_scan }}`\n\n");
+            let scanDetails = "";
+
+            if ("${{ inputs.checkov_scan }}" === "success" && "${{ inputs.checkov_scan_result }}" !== "" && fs.existsSync("${{ inputs.checkov_scan_result }}")) {
+              let cmdOutput = ""
+              const cmdOptions = {};
+              cmdOptions.listeners = {
+                stdout: (data) => {
+                  cmdOutput += data.toString();
+                }
+              };
+
+              cmdOutput = ""
+              await exec.exec(`/bin/bash -c "grep -E '^terraform scan results\:|^By bridgecrew.io\.' ${{ inputs.checkov_scan_result }};
+              const scanSummary = cmdOutput.trim();
+              const hasChanges = scanSummary.match(/^terraform scan results\:/g);
+
+              cmdOutput = ""
+              await exec.exec(`/bin/bash -c "wc --chars ${{ inputs.checkov_scan_result }} | grep -Eo '^[0-9]+'"`, "", cmdOptions);
+              const scanOutputChars = parseInt(cmdOutput, 10);
+
+              scanDetails = `
+          \`${scanSummary}\`
+
+          `;
+
+              if (hasChanges && scanOutputChars <= 50000) {
+                scanDetails = scanDetails.concat(`<details><summary>Show Scan Results</summary>
+
+          \`\`\`diff
+          ${fs.readFileSync("${{ inputs.checkov_scan_result }}", { encoding: "utf8", flag: "r" }).replace(/^(\u0020+)([\~\-\+\/]+)/gm, "$2$1").trim()}
+          \`\`\`
+
+          </details>
+
+          `);
+              }
+            }
+
+            body = body.concat(`#### Check Scan Results 📖\`${{ inputs.checkov_scan }}\`
+          ${scanDetails}
+          `);
           }
+
 
           if ("${{ inputs.apply_outcome }}" !== "") {
 
