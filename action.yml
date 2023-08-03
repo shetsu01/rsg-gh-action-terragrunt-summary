@@ -173,7 +173,7 @@ runs:
               };
 
               cmdOutput = ""
-              await exec.exec(`/bin/bash -c "grep -E '\"check_type\": \"terraform\"' ${{ inputs.checkov_scan_result }}|| echo 'No Terraform code found that can be scanned.'"`, "", cmdOptions);
+              await exec.exec(`/bin/bash -c "grep -A 9999999 '\"check_type\": \"terraform\"' ${{ inputs.checkov_scan_result }}|| echo 'No Terraform code found that can be scanned.'"`, "", cmdOptions);
               const regex = /"summary": \{[^}]*\}/;
               const scanSummary = cmdOutput.match(regex);
               const scanTrim = cmdOutput.trim();              
