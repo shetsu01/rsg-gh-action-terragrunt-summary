@@ -178,6 +178,7 @@ runs:
               const match = cmdOutput.match(regex);
               if (match) {
                 const scanSummary = JSON.parse(`{${match[0]}}`);
+              }
               const hasChanges = scanSummary.match(/^"terraform"\:/g);
 
               cmdOutput = ""
