@@ -173,7 +173,7 @@ runs:
               };
 
               cmdOutput = ""
-              await exec.exec(`/bin/bash -c "grep -E '^terraform scan results\:|^By bridgecrew.io\.' ${{ inputs.checkov_scan_result }}`, "", cmdOptions)
+              await exec.exec(`/bin/bash -c "grep -E '^terraform scan results\:|^By bridgecrew.io\.' ${{ inputs.checkov_scan_result }}|| echo 'No Terraform code found that can be scanned.'"`, "", cmdOptions);
               const scanSummary = cmdOutput.trim();
               const hasChanges = scanSummary.match(/^terraform scan results\:/g);
 
