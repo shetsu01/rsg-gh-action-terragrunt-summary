@@ -175,7 +175,7 @@ runs:
               cmdOutput = ""
               await exec.exec(`/bin/bash -c "grep -A 9999999 'check_type' ${{ inputs.checkov_scan_result }} || echo 'No Terraform code found that can be scanned.'"`, "", cmdOptions);
               const regex = /"summary": \{[^}]*\}/;
-              const scanSummary = JSON.stringify(cmdOutput.match(regex),null,'\t');
+              const scanSummary = cmdOutput.match(regex);
               const scanTrim = cmdOutput.trim();              
               const hasChanges = scanTrim.match(/"check_type": "terraform"/g);
 
@@ -203,7 +203,7 @@ runs:
 
             body = body.concat(`#### Checkov Scan Results 🕵️\`${{ inputs.checkov_scan }}\`
           ${scanDetails}
-          `);
+          ` \n \n \`Please Refer to the below document for any additional information on the Checkov policy and checks : \n https://reedelsevier.sharepoint.com/sites/InsuranceCoreSRE/SitePages/Checkov-Scan-in-IAC-Workflow.aspx \`);
           }
 
 
