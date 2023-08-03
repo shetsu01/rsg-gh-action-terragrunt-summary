@@ -175,7 +175,7 @@ runs:
               cmdOutput = ""
               await exec.exec(`/bin/bash -c "grep -E '^"check_type"\: ^"terraform"' ${{ inputs.checkov_scan_result }}|| echo 'No Terraform code found that can be scanned.'"`, "", cmdOptions);
               const scanSummary = cmdOutput.trim();
-              const hasChanges = scanSummary.match(/^terraform scan results\:/g);
+              const hasChanges = scanSummary.match(/^"check_type"\:/g);
 
               cmdOutput = ""
               await exec.exec(`/bin/bash -c "wc --chars ${{ inputs.checkov_scan_result }} | grep -Eo '^[0-9]+'"`, "", cmdOptions);
