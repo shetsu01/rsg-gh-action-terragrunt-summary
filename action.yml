@@ -199,7 +199,7 @@ runs:
               }
             }
 
-            body = body.concat(`#### Check Scan Results 📖\`${{ inputs.checkov_scan }}\`
+            body = body.concat(`#### Check Scan Results 🔍\`${{ inputs.checkov_scan }}\`
           ${scanDetails}
           `);
           }
