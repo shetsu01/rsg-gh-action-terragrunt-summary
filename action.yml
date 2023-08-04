@@ -203,7 +203,7 @@ runs:
 
             body = body.concat(`#### Checkov Scan Results 🕵️\`${{ inputs.checkov_scan }}\`
           ${scanDetails} \n
-          #### Please Refer to the below document for any additional information on the Checkov policy and checks :\n 
+          #### Please refer to the below document for any additional information on the Checkov policy and checks :\n 
            https://reedelsevier.sharepoint.com/sites/InsuranceCoreSRE/SitePages/Checkov-Scan-in-IAC-Workflow.aspx 
           `);
           }
