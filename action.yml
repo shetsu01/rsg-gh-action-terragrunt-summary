@@ -188,7 +188,7 @@ runs:
 
           `;
 
-              if (hasChanges && scanOutputChars <= 50000) {
+              if (hasChanges && scanOutputChars <= 5000000) {
                 scanDetails = scanDetails.concat(`<details><summary>Show Scan Results</summary>
 
           \`\`\`diff
